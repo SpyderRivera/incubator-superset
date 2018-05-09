@@ -170,6 +170,8 @@ class DashboardFilter(SupersetFilter):
         Slice = models.Slice  # noqa
         Favorites = models.FavStar
 
+        users_favorite_dash_ids = []
+
         if not g.user.is_anonymous():
             users_favorite_dash_ids = [fav.obj_id for fav in (
                 db.session.query(Favorites)
@@ -179,9 +181,9 @@ class DashboardFilter(SupersetFilter):
 
         if self.has_all_datasource_access():
             query = query.filter(sqla.or_(
-                Dash.owners.any(User.id == g.user.id),  # Dashboards user owns
-                Dash.published == 1,  # Published Dashboards
-                Dash.id.in_(users_favorite_dash_ids),  # Favorite Dashboards
+                Dash.owners.any(User.id == g.user.id),
+                Dash.published == True,  # noqa
+                Dash.id.in_(users_favorite_dash_ids),
             ))
             return query
 
@@ -204,9 +206,9 @@ class DashboardFilter(SupersetFilter):
 
         if not g.user.is_anonymous():
             query = query.filter(sqla.or_(
-                Dash.owners.any(User.id == g.user.id),  # Dashboards user owns
-                Dash.published == 1,  # Published Dashboards
-                Dash.id.in_(users_favorite_dash_ids),  # Favorite Dashboards
+                Dash.owners.any(User.id == g.user.id),
+                Dash.published == True,  # noqa
+                Dash.id.in_(users_favorite_dash_ids),
             ))
 
         return query
