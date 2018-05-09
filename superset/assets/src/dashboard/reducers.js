@@ -124,6 +124,10 @@ export const dashboard = function (state = {}, action) {
     [actions.TOGGLE_FAVE_STAR]() {
       return { ...state, isStarred: action.isStarred };
     },
+    [actions.TOGGLE_PUBLISHED]() {
+      const newDashboard = { ...state.dashboard, isPublished: action.isPublished };
+      return { ...state, dashboard: newDashboard };
+    },
     [actions.SET_EDIT_MODE]() {
       return { ...state, editMode: action.editMode };
     },

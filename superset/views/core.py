@@ -20,6 +20,7 @@ from flask_appbuilder import expose, SimpleFormView
 from flask_appbuilder.actions import action
 from flask_appbuilder.models.sqla.interface import SQLAInterface
 from flask_appbuilder.security.decorators import has_access, has_access_api
+from flask_appbuilder.security.sqla import models as ab_models
 from flask_babel import gettext as __
 from flask_babel import lazy_gettext as _
 import pandas as pd
@@ -158,13 +159,32 @@ class SliceFilter(SupersetFilter):
 
 class DashboardFilter(SupersetFilter):
 
-    """List dashboards for which users have access to at least one slice"""
+    """
+    List dashboards for which users have access to at least one slice and those which
+    the user owns, have been published, or have been favorited.
+    """
 
     def apply(self, query, func):  # noqa
-        if self.has_all_datasource_access():
-            return query
+        Dash = models.Dashboard
+        User = ab_models.User
         Slice = models.Slice  # noqa
-        Dash = models.Dashboard  # noqa
+        Favorites = models.FavStar
+
+        if not g.user.is_anonymous():
+            users_favorite_dash_ids = [fav.obj_id for fav in (
+                db.session.query(Favorites)
+                .filter(sqla.and_(Favorites.user_id == g.user.id,
+                                  Favorites.class_name == 'Dashboard'))
+            )]
+
+        if self.has_all_datasource_access():
+            query = query.filter(sqla.or_(
+                Dash.owners.any(User.id == g.user.id),  # Dashboards user owns
+                Dash.published == 1,  # Published Dashboards
+                Dash.id.in_(users_favorite_dash_ids),  # Favorite Dashboards
+            ))
+            return query
+
         # TODO(bogdan): add `schema_access` support here
         datasource_perms = self.get_view_menus('datasource_access')
         slice_ids_qry = (
@@ -172,6 +192,7 @@ class DashboardFilter(SupersetFilter):
             .query(Slice.id)
             .filter(Slice.perm.in_(datasource_perms))
         )
+
         query = query.filter(
             Dash.id.in_(
                 db.session.query(Dash.id)
@@ -180,6 +201,14 @@ class DashboardFilter(SupersetFilter):
                 .filter(Slice.id.in_(slice_ids_qry)),
             ),
         )
+
+        if not g.user.is_anonymous():
+            query = query.filter(sqla.or_(
+                Dash.owners.any(User.id == g.user.id),  # Dashboards user owns
+                Dash.published == 1,  # Published Dashboards
+                Dash.id.in_(users_favorite_dash_ids),  # Favorite Dashboards
+            ))
+
         return query
 
 
@@ -538,7 +567,7 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
     order_columns = ['modified']
     edit_columns = [
         'dashboard_title', 'slug', 'slices', 'owners', 'position_json', 'css',
-        'json_metadata']
+        'json_metadata', 'published']
     show_columns = edit_columns + ['table_names']
     search_columns = ('dashboard_title', 'slug', 'owners')
     add_columns = edit_columns
@@ -560,6 +589,8 @@ class DashboardModelView(SupersetModelView, DeleteMixin):  # noqa
             'is exposed here for reference and for power users who may '
             'want to alter specific parameters.'),
         'owners': _('Owners is a list of users who can alter the dashboard.'),
+        'published': _('Determines whether or not this dashboard is '
+                       'visible in the list of all dashboards'),
     }
     base_filters = [['slice', DashboardFilter, lambda: []]]
     add_form_query_rel_fields = {
@@ -2008,6 +2039,30 @@ class Superset(BaseSupersetView):
             count = len(favs)
         session.commit()
         return json_success(json.dumps({'count': count}))
+
+    @expose('/dashboard/<dashboard_id>/published/<action>/')
+    def published(self, dashboard_id, action):
+        """Toggles published status on dashboards"""
+        session = db.session()
+        Dashboard = models.Dashboard  # noqa
+        dash = session.query(Dashboard).filter(Dashboard.id == dashboard_id).one()
+
+        if action == 'select' or action == 'unselect':
+            if not g.user.is_authenticated():
+                return json_error_response('ERROR: user is not authenticated', status=401)
+
+            if not is_owner(dash, g.user):
+                return json_error_response('ERROR: "{0}" cannot alter dashboard "{1}"'
+                                           .format(g.user.username, dash.dashboard_title),
+                                           status=403)
+
+        if action == 'select':
+            dash.published = True
+        elif action == 'unselect':
+            dash.published = False
+
+        session.commit()
+        return json_success(json.dumps({'published': dash.published}))
 
     @has_access
     @expose('/dashboard/<dashboard_id>/')

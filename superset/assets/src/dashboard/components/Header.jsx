@@ -2,6 +2,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 
 import Controls from './Controls';
+import PublishedStatus from './PublishedStatus';
 import EditableTitle from '../../components/EditableTitle';
 import Button from '../../components/Button';
 import FaveStar from '../../components/FaveStar';
@@ -17,8 +18,10 @@ const propTypes = {
   onSave: PropTypes.func,
   onChange: PropTypes.func,
   fetchFaveStar: PropTypes.func,
+  fetchPublished: PropTypes.func,
   renderSlices: PropTypes.func,
   saveFaveStar: PropTypes.func,
+  savePublished: PropTypes.func,
   serialize: PropTypes.func,
   startPeriodicRender: PropTypes.func,
   updateDashboardTitle: PropTypes.func,
@@ -86,6 +89,14 @@ class Header extends React.PureComponent {
                 fetchFaveStar={this.props.fetchFaveStar}
                 saveFaveStar={this.props.saveFaveStar}
                 isStarred={this.props.isStarred}
+              />
+            </span>
+            <span className="favstar m-r-5">
+              <PublishedStatus
+                dashboardId={dashboard.id}
+                fetchPublished={this.props.fetchPublished}
+                savePublished={this.props.savePublished}
+                isPublished={dashboard.isPublished}
               />
             </span>
             {this.renderUnsaved()}
