@@ -372,9 +372,6 @@ class DashboardTests(SupersetTestCase):
         favorites.class_name = 'Dashboard'
         favorites.user_id = user.id
 
-        print("DASH ID: ", favorite_dash.id)
-        print("FAV: ", favorites)
-
         db.session.merge(favorites)
         db.session.commit()
 
