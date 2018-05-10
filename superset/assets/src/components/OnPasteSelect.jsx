@@ -78,7 +78,7 @@ OnPasteSelect.propTypes = {
   isValidNewOption: PropTypes.func,
 };
 OnPasteSelect.defaultProps = {
-  separator: ',',
+  separator: '\t',
   selectWrap: Select,
   valueKey: 'value',
   labelKey: 'label',
