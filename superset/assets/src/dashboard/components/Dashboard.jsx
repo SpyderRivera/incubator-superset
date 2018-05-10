@@ -71,6 +71,8 @@ class Dashboard extends React.PureComponent {
     this.exportCSV = this.exportCSV.bind(this);
     this.props.actions.fetchFaveStar = this.props.actions.fetchFaveStar.bind(this);
     this.props.actions.saveFaveStar = this.props.actions.saveFaveStar.bind(this);
+    this.props.actions.fetchPublished = this.props.actions.fetchPublished.bind(this);
+    this.props.actions.savePublished = this.props.actions.savePublished.bind(this);
     this.props.actions.saveSlice = this.props.actions.saveSlice.bind(this);
     this.props.actions.removeSlice = this.props.actions.removeSlice.bind(this);
     this.props.actions.removeChart = this.props.actions.removeChart.bind(this);
@@ -313,6 +315,8 @@ class Dashboard extends React.PureComponent {
             serialize={this.serialize}
             fetchFaveStar={this.props.actions.fetchFaveStar}
             saveFaveStar={this.props.actions.saveFaveStar}
+            fetchPublished={this.props.actions.fetchPublished}
+            savePublished={this.props.actions.savePublished}
             renderSlices={this.fetchAllSlices}
             startPeriodicRender={this.startPeriodicRender}
             addSlicesToDashboard={this.addSlicesToDashboard}
